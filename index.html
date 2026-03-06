@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chef de Refri - Recetas IA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .recipe-card {
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .loader {
+            border-top-color: #3498db;
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4">
+
+    <!-- Header -->
+    <header class="w-full max-w-md text-center mb-6">
+        <h1 class="text-3xl font-bold text-blue-600">🍳 Chef de Refri</h1>
+        <p class="text-gray-600">Toma una foto a tu refrigeradora y cocina algo rico</p>
+    </header>
+
+    <!-- Main Container -->
+    <main class="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden">
+        
+        <!-- Video Preview Area -->
+        <div id="camera-container" class="relative bg-black h-80 flex items-center justify-center">
+            <video id="video" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline></video>
+            <canvas id="canvas" class="hidden"></canvas>
+            <img id="photo-preview" class="hidden absolute inset-0 w-full h-full object-cover" />
+            
+            <div id="placeholder-text" class="text-white text-center p-4 z-10">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <p>Presiona "Iniciar Cámara" para comenzar</p>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="p-6 space-y-4">
+            <div class="flex gap-2">
+                <button id="start-btn" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl transition">
+                    📸 Iniciar Cámara
+                </button>
+                <button id="capture-btn" class="hidden flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition">
+                    ✨ Analizar Refri
+                </button>
+                <button id="retake-btn" class="hidden flex-1 bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 rounded-xl transition">
+                    🔄 Repetir
+                </button>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading" class="hidden flex flex-col items-center py-8">
+                <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
+                <p class="text-gray-600 animate-pulse">Analizando ingredientes y creando receta...</p>
+            </div>
+
+            <!-- Recipe Result -->
+            <div id="recipe-result" class="hidden recipe-card space-y-4">
+                <div class="border-t pt-4">
+                    <h2 id="recipe-title" class="text-2xl font-bold text-gray-800 mb-2"></h2>
+                    <div class="bg-blue-50 p-3 rounded-lg mb-4">
+                        <p class="text-sm font-semibold text-blue-700">Ingredientes detectados:</p>
+                        <p id="detected-items" class="text-sm text-blue-900 italic"></p>
+                    </div>
+                    
+                    <div class="space-y-4 text-gray-700">
+                        <div>
+                            <h3 class="font-bold flex items-center">
+                                <span class="mr-2">🛒</span> Ingredientes necesarios
+                            </h3>
+                            <ul id="recipe-ingredients" class="list-disc ml-6 mt-1 space-y-1"></ul>
+                        </div>
+                        <div>
+                            <h3 class="font-bold flex items-center">
+                                <span class="mr-2">👨‍🍳</span> Procedimiento
+                            </h3>
+                            <div id="recipe-steps" class="mt-1 space-y-2 text-sm leading-relaxed"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error-box" class="hidden p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm"></div>
+        </div>
+    </main>
+
+    <footer class="mt-8 text-gray-400 text-xs text-center max-w-xs">
+        Nota: Esta app requiere conexión a internet y acceso a la cámara. Los resultados son generados por IA.
+    </footer>
+
+    <script>
+        const apiKey = ""; // La clave se inserta automáticamente en el entorno
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const photoPreview = document.getElementById('photo-preview');
+        const startBtn = document.getElementById('start-btn');
+        const captureBtn = document.getElementById('capture-btn');
+        const retakeBtn = document.getElementById('retake-btn');
+        const loading = document.getElementById('loading');
+        const recipeResult = document.getElementById('recipe-result');
+        const errorBox = document.getElementById('error-box');
+        const placeholderText = document.getElementById('placeholder-text');
+
+        let stream = null;
+
+        // --- Camera Logic ---
+        startBtn.onclick = async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "environment" }, 
+                    audio: false 
+                });
+                video.srcObject = stream;
+                startBtn.classList.add('hidden');
+                captureBtn.classList.remove('hidden');
+                placeholderText.classList.add('hidden');
+            } catch (err) {
+                showError("No se pudo acceder a la cámara. Por favor, otorga los permisos.");
+            }
+        };
+
+        captureBtn.onclick = () => {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const imageData = canvas.toDataURL('image/png');
+            photoPreview.src = imageData;
+            photoPreview.classList.remove('hidden');
+            video.classList.add('hidden');
+            
+            captureBtn.classList.add('hidden');
+            retakeBtn.classList.remove('hidden');
+            
+            analyzeImage(imageData.split(',')[1]);
+        };
+
+        retakeBtn.onclick = () => {
+            photoPreview.classList.add('hidden');
+            video.classList.remove('hidden');
+            retakeBtn.classList.add('hidden');
+            captureBtn.classList.remove('hidden');
+            recipeResult.classList.add('hidden');
+            errorBox.classList.add('hidden');
+        };
+
+        // --- IA Logic ---
+        async function analyzeImage(base64Data) {
+            loading.classList.remove('hidden');
+            recipeResult.classList.add('hidden');
+            errorBox.classList.add('hidden');
+
+            const prompt = `Analiza esta imagen de una refrigeradora o ingredientes. 
+            Identifica qué alimentos hay y genera una receta creativa solo con esos ingredientes (puedes asumir básicos como sal, aceite o agua). 
+            Responde estrictamente en formato JSON con esta estructura:
+            {
+                "titulo": "Nombre del plato",
+                "detectados": "lista de ingredientes que viste",
+                "ingredientes": ["ingrediente 1", "ingrediente 2"],
+                "pasos": ["paso 1", "paso 2"]
+            }`;
+
+            try {
+                const response = await fetchWithRetry(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [
+                                    { text: prompt },
+                                    { inlineData: { mimeType: "image/png", data: base64Data } }
+                                ]
+                            }],
+                            generationConfig: { responseMimeType: "application/json" }
+                        })
+                    }
+                );
+
+                const result = await response.json();
+                const recipeData = JSON.parse(result.candidates[0].content.parts[0].text);
+                displayRecipe(recipeData);
+            } catch (err) {
+                showError("Hubo un error al procesar la imagen. Intenta de nuevo.");
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        function displayRecipe(data) {
+            document.getElementById('recipe-title').innerText = data.titulo;
+            document.getElementById('detected-items').innerText = data.detectados;
+            
+            const ingList = document.getElementById('recipe-ingredients');
+            ingList.innerHTML = '';
+            data.ingredientes.forEach(ing => {
+                const li = document.createElement('li');
+                li.innerText = ing;
+                ingList.appendChild(li);
+            });
+
+            const stepsDiv = document.getElementById('recipe-steps');
+            stepsDiv.innerHTML = '';
+            data.pasos.forEach((paso, index) => {
+                const p = document.createElement('p');
+                p.innerHTML = `<span class="font-bold text-blue-500">${index + 1}.</span> ${paso}`;
+                stepsDiv.appendChild(p);
+            });
+
+            recipeResult.classList.remove('hidden');
+            recipeResult.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showError(msg) {
+            errorBox.innerText = msg;
+            errorBox.classList.remove('hidden');
+        }
+
+        async function fetchWithRetry(url, options, retries = 5, backoff = 1000) {
+            try {
+                const res = await fetch(url, options);
+                if (!res.ok) throw new Error();
+                return res;
+            } catch (err) {
+                if (retries <= 0) throw err;
+                await new Promise(resolve => setTimeout(resolve, backoff));
+                return fetchWithRetry(url, options, retries - 1, backoff * 2);
+            }
+        }
+    </script>
+</body>
+</html>
