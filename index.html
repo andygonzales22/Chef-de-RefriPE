@@ -4,94 +4,90 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Chef de Refri - IA</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Manifest para que parezca App -->
-    <link rel="manifest" href="data:application/json;base64,ewogICJpbmRleCI6ICJpbmRleC5odG1sIiwKICAidGhlbWVfY29sb3IiOiAiIzI1NjNlYiIsCiAgImJhY2tncm91bmRfY29sb3I6ICIjZmZmZmZmIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAic2NvcGUiOiAiLiIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAibmFtZSI6ICJDaGVmIGRlIFJlZnJpIiwKICAic2hvcnRfbmFtZSI6ICJDaGVmUmVmcGkiCn0=">
     <style>
         .loader { border-top-color: #3b82f6; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        video { transform: scaleX(1); }
+        body { overscroll-behavior-y: contain; background-color: #f8fafc; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen font-sans antialiased text-slate-900">
+<body class="min-h-screen font-sans antialiased text-slate-900">
 
     <div class="max-w-md mx-auto min-h-screen flex flex-col">
-        <!-- Header -->
         <header class="p-6 text-center">
-            <h1 class="text-3xl font-extrabold text-blue-600 tracking-tight">🍳 Chef de Refri</h1>
-            <p class="text-slate-500 text-sm mt-1">IA que cocina con lo que tienes</p>
+            <h1 class="text-3xl font-extrabold text-blue-600 tracking-tight italic">🍳 Chef de Refri</h1>
+            <p class="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Inteligencia Artificial</p>
         </header>
 
-        <!-- Camera Section -->
         <div class="flex-1 px-4 flex flex-col">
-            <!-- Alerta de Seguridad -->
-            <div id="protocol-alert" class="hidden mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-xl text-xs text-center font-bold">
-                ⚠️ ADVERTENCIA: La cámara requiere HTTPS. Estás en un entorno no seguro.
-            </div>
-
+            <!-- Contenedor de Cámara -->
             <div id="viewfinder" class="relative bg-black rounded-3xl overflow-hidden aspect-[3/4] shadow-2xl flex items-center justify-center border-4 border-white">
                 <video id="video" class="w-full h-full object-cover" autoplay playsinline></video>
                 <canvas id="canvas" class="hidden"></canvas>
                 <img id="photo-preview" class="hidden w-full h-full object-cover">
                 
-                <div id="start-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 text-white p-8 text-center transition-opacity">
-                    <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mb-4 shadow-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div id="start-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 text-white p-8 text-center transition-opacity">
+                    <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mb-6 shadow-xl animate-bounce">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                         </svg>
                     </div>
-                    <p class="font-medium">Presiona el botón azul para encender la cámara.</p>
+                    <p class="text-lg font-bold">¡Listo para cocinar!</p>
+                    <p class="text-sm opacity-70 mt-2">Toca el botón azul de abajo para encender la cámara.</p>
                 </div>
             </div>
 
-            <!-- Botones de Acción -->
-            <div class="mt-6 space-y-3 pb-8">
-                <button id="btn-start" class="w-full bg-blue-600 active:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2">
-                    <span>🚀 Iniciar Cámara</span>
+            <!-- Botones -->
+            <div class="mt-6 space-y-3 pb-10">
+                <button id="btn-start" class="w-full bg-blue-600 active:scale-95 text-white font-black py-5 rounded-2xl shadow-lg transition-all text-lg uppercase tracking-wider">
+                    🚀 ENCENDER CÁMARA
                 </button>
 
-                <button id="btn-capture" class="hidden w-full bg-emerald-500 active:bg-emerald-600 text-white font-bold py-4 rounded-2xl shadow-lg transition-all">
-                    📸 Tomar Foto y Analizar
+                <button id="btn-capture" class="hidden w-full bg-emerald-500 active:scale-95 text-white font-black py-5 rounded-2xl shadow-lg transition-all text-lg uppercase tracking-wider">
+                    📸 TOMAR FOTO Y ANALIZAR
                 </button>
 
-                <button id="btn-reset" class="hidden w-full bg-slate-200 text-slate-700 font-bold py-4 rounded-2xl transition-all">
-                    🔄 Intentar de nuevo
+                <button id="btn-reset" class="hidden w-full bg-slate-200 text-slate-700 font-bold py-4 rounded-2xl active:scale-95 transition-all">
+                    🔄 INTENTAR CON OTRA FOTO
                 </button>
 
                 <!-- Status / Loading -->
-                <div id="status-container" class="hidden text-center py-4 bg-white rounded-2xl shadow-inner animate-pulse">
-                    <div class="loader mx-auto mb-2 ease-linear rounded-full border-4 border-slate-100 h-8 w-8"></div>
-                    <p id="status-text" class="text-sm font-medium text-slate-600">Procesando con IA...</p>
+                <div id="status-container" class="hidden text-center py-6 bg-white rounded-2xl shadow-xl border-2 border-blue-500 animate-pulse">
+                    <div class="loader mx-auto mb-3 rounded-full border-4 border-slate-100 h-10 w-10 border-t-blue-600"></div>
+                    <p id="status-text" class="text-blue-700 font-black uppercase text-xs tracking-widest">El Chef IA está pensando...</p>
                 </div>
             </div>
         </div>
 
         <!-- Resultados -->
-        <div id="results" class="hidden px-4 pb-12">
-            <div class="bg-white rounded-3xl p-6 shadow-xl border border-slate-100">
-                <h2 id="res-title" class="text-2xl font-black text-slate-800 mb-4"></h2>
-                
-                <div class="mb-6">
-                    <span class="text-[10px] uppercase font-bold tracking-widest text-blue-500">Ingredientes encontrados</span>
-                    <p id="res-items" class="text-slate-600 text-sm italic mt-1"></p>
+        <div id="results" class="hidden px-4 pb-20">
+            <div class="bg-white rounded-[2.5rem] p-8 shadow-2xl border border-slate-100 overflow-hidden relative">
+                <div class="absolute top-0 right-0 p-4 opacity-10">
+                    <svg class="w-20 h-20" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" /><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h.01a1 1 0 100-2H10zm3 0a1 1 0 000 2h.01a1 1 0 100-2H13zM7 13a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h.01a1 1 0 100-2H10zm3 0a1 1 0 000 2h.01a1 1 0 100-2H13z" clip-rule="evenodd" /></svg>
                 </div>
 
-                <div class="space-y-6">
+                <h2 id="res-title" class="text-3xl font-black text-slate-800 mb-6 leading-tight"></h2>
+                
+                <div class="bg-blue-50 p-4 rounded-2xl mb-8">
+                    <span class="text-[10px] uppercase font-black tracking-[0.2em] text-blue-600 block mb-2">Ingredientes Detectados</span>
+                    <p id="res-items" class="text-slate-800 text-base font-semibold italic"></p>
+                </div>
+
+                <div class="space-y-8">
                     <div>
-                        <h3 class="font-bold text-slate-800 flex items-center gap-2">
-                            <span class="w-6 h-6 bg-amber-100 text-amber-600 rounded-md flex items-center justify-center text-xs">1</span>
-                            Ingredientes
+                        <h3 class="font-black text-slate-800 uppercase tracking-tighter text-sm flex items-center gap-2 mb-4">
+                            <span class="w-8 h-8 bg-amber-400 text-white rounded-full flex items-center justify-center shadow-md italic">1</span>
+                            ¿Qué necesitas?
                         </h3>
-                        <ul id="res-ingredients" class="mt-3 space-y-2 text-slate-600 text-sm list-disc pl-5"></ul>
+                        <ul id="res-ingredients" class="space-y-3 text-slate-700 text-base font-medium list-none"></ul>
                     </div>
 
                     <div>
-                        <h3 class="font-bold text-slate-800 flex items-center gap-2">
-                            <span class="w-6 h-6 bg-emerald-100 text-emerald-600 rounded-md flex items-center justify-center text-xs">2</span>
-                            Preparación
+                        <h3 class="font-black text-slate-800 uppercase tracking-tighter text-sm flex items-center gap-2 mb-4">
+                            <span class="w-8 h-8 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-md italic">2</span>
+                            Instrucciones del Chef
                         </h3>
-                        <div id="res-steps" class="mt-3 space-y-4 text-slate-600 text-sm"></div>
+                        <div id="res-steps" class="space-y-5"></div>
                     </div>
                 </div>
             </div>
@@ -99,6 +95,7 @@
     </div>
 
     <script>
+        // API Key (Se inyecta en tiempo de ejecución)
         const apiKey = ""; 
 
         const video = document.getElementById('video');
@@ -110,46 +107,36 @@
         const startOverlay = document.getElementById('start-overlay');
         const statusContainer = document.getElementById('status-container');
         const results = document.getElementById('results');
-        const protocolAlert = document.getElementById('protocol-alert');
 
-        // Verificar protocolo al cargar
-        window.onload = () => {
-            if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
-                protocolAlert.classList.remove('hidden');
-            }
-        };
-
+        // Función de Cámara para APK
         btnStart.addEventListener('click', async () => {
             try {
-                // Intentar primero con cámara trasera (environment) de forma menos estricta
                 const constraints = {
-                    video: { 
-                        facingMode: "environment"
-                    },
+                    video: { facingMode: "environment" },
                     audio: false
                 };
-
-                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
                 
                 startOverlay.classList.add('opacity-0', 'pointer-events-none');
                 btnStart.classList.add('hidden');
                 btnCapture.classList.remove('hidden');
-                protocolAlert.classList.add('hidden');
-                
             } catch (err) {
-                console.error("Error detallado:", err);
-                alert("No se pudo activar la cámara. Razones posibles:\n1. Falta permiso de cámara en el navegador.\n2. La APK de AppsGeyser no tiene permiso de cámara otorgado en los ajustes de Android.\n3. Entorno no seguro (HTTP).");
+                console.error("Error de cámara:", err);
+                alert("ERROR DE CÁMARA:\n1. Ve a Ajustes del celular.\n2. Aplicaciones > Chef de Refri.\n3. Activa el permiso de Cámara manualmente.");
             }
         });
 
+        // Capturar Foto
         btnCapture.addEventListener('click', () => {
             const context = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            const base64Image = canvas.toDataURL('image/jpeg', 0.7);
+            // Calidad media para no saturar la red del APK
+            const base64Image = canvas.toDataURL('image/jpeg', 0.5);
             
             photoPreview.src = base64Image;
             photoPreview.classList.remove('hidden');
@@ -168,35 +155,37 @@
             results.classList.add('hidden');
         });
 
+        // Proceso con la IA de Google
         async function processWithAI(base64Data) {
             statusContainer.classList.remove('hidden');
             results.classList.add('hidden');
 
-            const prompt = "Actúa como un chef profesional. Analiza la imagen de esta refrigeradora e identifica los ingredientes. Luego crea una receta rica con ellos. Responde solo en JSON con este formato: {titulo: '', detectados: '', ingredientes: [], pasos: []}";
+            const prompt = "Eres un chef experto. Identifica los alimentos en esta foto de nevera. Inventa una receta creativa con esos ingredientes. Responde EXTRICTAMENTE en este formato JSON: {\"titulo\": \"Nombre Receta\", \"detectados\": \"Lista de lo que viste\", \"ingredientes\": [\"item 1\", \"item 2\"], \"pasos\": [\"paso 1\", \"paso 2\"]}";
 
             try {
-                const response = await fetchWithRetry(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
-                    {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{
-                                parts: [
-                                    { text: prompt },
-                                    { inlineData: { mimeType: "image/jpeg", data: base64Data } }
-                                ]
-                            }],
-                            generationConfig: { responseMimeType: "application/json" }
-                        })
-                    }
-                );
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [
+                                { text: prompt },
+                                { inlineData: { mimeType: "image/jpeg", data: base64Data } }
+                            ]
+                        }],
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
+                });
+
+                if (!response.ok) throw new Error("Error de red: " + response.status);
 
                 const data = await response.json();
-                const recipe = JSON.parse(data.candidates[0].content.parts[0].text);
-                renderRecipe(recipe);
+                const recipeText = data.candidates[0].content.parts[0].text;
+                renderRecipe(JSON.parse(recipeText));
+                
             } catch (err) {
-                alert("Error de conexión con la IA. Intenta de nuevo.");
+                console.error(err);
+                alert("EL CHEF IA NO RESPONDE:\n\n1. Revisa que tengas Internet.\n2. Asegúrate de que 'Allow External URLs' esté marcado en Website 2 APK.");
             } finally {
                 statusContainer.classList.add('hidden');
             }
@@ -210,7 +199,8 @@
             ingList.innerHTML = '';
             data.ingredientes.forEach(i => {
                 const li = document.createElement('li');
-                li.innerText = i;
+                li.className = "flex items-center gap-3";
+                li.innerHTML = `<span class="w-1.5 h-1.5 bg-amber-400 rounded-full"></span> <span>${i}</span>`;
                 ingList.appendChild(li);
             });
 
@@ -218,24 +208,13 @@
             stepsDiv.innerHTML = '';
             data.pasos.forEach((p, i) => {
                 const step = document.createElement('div');
-                step.className = "flex gap-3";
-                step.innerHTML = `<span class="font-bold text-blue-500">${i+1}.</span><p>${p}</p>`;
+                step.className = "flex gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100";
+                step.innerHTML = `<span class="font-black text-emerald-600 text-lg">${i+1}</span><p class="text-slate-700 font-medium leading-relaxed">${p}</p>`;
                 stepsDiv.appendChild(step);
             });
 
             results.classList.remove('hidden');
             results.scrollIntoView({ behavior: 'smooth' });
-        }
-
-        async function fetchWithRetry(url, options, retries = 3, delay = 1000) {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const res = await fetch(url, options);
-                    if (res.ok) return res;
-                } catch (e) {}
-                await new Promise(r => setTimeout(r, delay));
-            }
-            throw new Error("API Error");
         }
     </script>
 </body>
