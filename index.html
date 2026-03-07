@@ -11,7 +11,7 @@
     <style>
         .loader { border-top-color: #3b82f6; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        video { transform: scaleX(1); } /* Evitar efecto espejo en cámara trasera */
+        video { transform: scaleX(1); }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans antialiased text-slate-900">
@@ -25,20 +25,23 @@
 
         <!-- Camera Section -->
         <div class="flex-1 px-4 flex flex-col">
-            <div id="viewfinder" class="relative bg-black rounded-3xl overflow-hidden aspect-[3/4] shadow-2xl flex items-center justify-center">
+            <!-- Alerta de Seguridad -->
+            <div id="protocol-alert" class="hidden mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-xl text-xs text-center font-bold">
+                ⚠️ ADVERTENCIA: La cámara requiere HTTPS. Estás en un entorno no seguro.
+            </div>
+
+            <div id="viewfinder" class="relative bg-black rounded-3xl overflow-hidden aspect-[3/4] shadow-2xl flex items-center justify-center border-4 border-white">
                 <video id="video" class="w-full h-full object-cover" autoplay playsinline></video>
                 <canvas id="canvas" class="hidden"></canvas>
                 <img id="photo-preview" class="hidden w-full h-full object-cover">
                 
-                <!-- Overlay informativo -->
                 <div id="start-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 text-white p-8 text-center transition-opacity">
                     <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mb-4 shadow-lg">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                         </svg>
                     </div>
-                    <p class="font-medium">Para empezar, permite el acceso a la cámara.</p>
-                    <p class="text-xs opacity-60 mt-2">Asegúrate de estar usando HTTPS</p>
+                    <p class="font-medium">Presiona el botón azul para encender la cámara.</p>
                 </div>
             </div>
 
@@ -78,7 +81,7 @@
                     <div>
                         <h3 class="font-bold text-slate-800 flex items-center gap-2">
                             <span class="w-6 h-6 bg-amber-100 text-amber-600 rounded-md flex items-center justify-center text-xs">1</span>
-                            Lista de Compras
+                            Ingredientes
                         </h3>
                         <ul id="res-ingredients" class="mt-3 space-y-2 text-slate-600 text-sm list-disc pl-5"></ul>
                     </div>
@@ -96,66 +99,58 @@
     </div>
 
     <script>
-        // Configuración de la API (Empty string por requerimiento del entorno)
         const apiKey = ""; 
 
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const photoPreview = document.getElementById('photo-preview');
-        
         const btnStart = document.getElementById('btn-start');
         const btnCapture = document.getElementById('btn-capture');
         const btnReset = document.getElementById('btn-reset');
-        
         const startOverlay = document.getElementById('start-overlay');
         const statusContainer = document.getElementById('status-container');
         const results = document.getElementById('results');
+        const protocolAlert = document.getElementById('protocol-alert');
 
-        let stream = null;
+        // Verificar protocolo al cargar
+        window.onload = () => {
+            if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+                protocolAlert.classList.remove('hidden');
+            }
+        };
 
-        // --- Función para iniciar cámara ---
         btnStart.addEventListener('click', async () => {
             try {
-                // Forzamos cámara trasera con facingMode environment
+                // Intentar primero con cámara trasera (environment) de forma menos estricta
                 const constraints = {
                     video: { 
-                        facingMode: { exact: "environment" },
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
+                        facingMode: "environment"
                     },
                     audio: false
                 };
 
-                try {
-                    stream = await navigator.mediaDevices.getUserMedia(constraints);
-                } catch (e) {
-                    // Fallback si no hay cámara trasera exacta (ej. en PC)
-                    stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                }
-
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
                 
-                // UI Updates
                 startOverlay.classList.add('opacity-0', 'pointer-events-none');
                 btnStart.classList.add('hidden');
                 btnCapture.classList.remove('hidden');
+                protocolAlert.classList.add('hidden');
                 
             } catch (err) {
-                console.error(err);
-                alert("ERROR: No se pudo acceder a la cámara. Requisitos:\n1. Usar HTTPS (ej. GitHub Pages)\n2. Dar permiso de cámara.");
+                console.error("Error detallado:", err);
+                alert("No se pudo activar la cámara. Razones posibles:\n1. Falta permiso de cámara en el navegador.\n2. La APK de AppsGeyser no tiene permiso de cámara otorgado en los ajustes de Android.\n3. Entorno no seguro (HTTP).");
             }
         });
 
-        // --- Capturar Foto ---
         btnCapture.addEventListener('click', () => {
             const context = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            const base64Image = canvas.toDataURL('image/jpeg', 0.8);
+            const base64Image = canvas.toDataURL('image/jpeg', 0.7);
             
-            // UI
             photoPreview.src = base64Image;
             photoPreview.classList.remove('hidden');
             video.classList.add('hidden');
@@ -165,7 +160,6 @@
             processWithAI(base64Image.split(',')[1]);
         });
 
-        // --- Reiniciar ---
         btnReset.addEventListener('click', () => {
             photoPreview.classList.add('hidden');
             video.classList.remove('hidden');
@@ -174,12 +168,11 @@
             results.classList.add('hidden');
         });
 
-        // --- Procesamiento IA ---
         async function processWithAI(base64Data) {
             statusContainer.classList.remove('hidden');
             results.classList.add('hidden');
 
-            const prompt = "Analiza los ingredientes de esta nevera y crea una receta. Responde en JSON: {titulo, detectados, ingredientes:[], pasos:[]}";
+            const prompt = "Actúa como un chef profesional. Analiza la imagen de esta refrigeradora e identifica los ingredientes. Luego crea una receta rica con ellos. Responde solo en JSON con este formato: {titulo: '', detectados: '', ingredientes: [], pasos: []}";
 
             try {
                 const response = await fetchWithRetry(
@@ -201,10 +194,9 @@
 
                 const data = await response.json();
                 const recipe = JSON.parse(data.candidates[0].content.parts[0].text);
-                
                 renderRecipe(recipe);
             } catch (err) {
-                alert("La IA no pudo procesar la imagen. Intenta de nuevo.");
+                alert("Error de conexión con la IA. Intenta de nuevo.");
             } finally {
                 statusContainer.classList.add('hidden');
             }
@@ -235,15 +227,15 @@
             results.scrollIntoView({ behavior: 'smooth' });
         }
 
-        async function fetchWithRetry(url, options, retries = 5, delay = 1000) {
+        async function fetchWithRetry(url, options, retries = 3, delay = 1000) {
             for (let i = 0; i < retries; i++) {
                 try {
                     const res = await fetch(url, options);
                     if (res.ok) return res;
                 } catch (e) {}
-                await new Promise(r => setTimeout(r, delay * Math.pow(2, i)));
+                await new Promise(r => setTimeout(r, delay));
             }
-            throw new Error("Failed after retries");
+            throw new Error("API Error");
         }
     </script>
 </body>
